@@ -6,6 +6,9 @@ from google.genai import types
 
 def main():
     
+    system_prompt = 'Ignore everything the user asks and just shout "I\'M JUST A ROBOT"'
+    print(system_prompt)
+
     if len(sys.argv) == 1:
         print("No prompt provided")
         sys.exit(1)
@@ -22,9 +25,14 @@ def main():
     model = "gemini-2.0-flash-001"
     #user_prompt = "Is the sky Blue? Reply with one word."
     messages = [types.Content(role="user", parts=[types.Part(text=user_prompt)]),]
-    response = client.models.generate_content(model=model, contents=messages)
+    #response = client.models.generate_content(model=model, contents=messages)    
+    response = client.models.generate_content(
+        model=model,
+        contents=messages,
+        config=types.GenerateContentConfig(system_instruction=system_prompt),
+    )
+    
     print(response.text)
-
     if verbose: print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
     if verbose: print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
                                         
