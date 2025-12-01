@@ -4,10 +4,9 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-from functions.get_files_info import available_functions
+from functions.call_function import call_function, available_functions
 
 def main():
-    
     #system_prompt = 'Ignore everything the user asks and just shout "I\'M JUST A ROBOT"'
     system_prompt = """
         You are a helpful AI coding agent.
@@ -46,13 +45,33 @@ def main():
     if verbose: print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
     function_calls = response.function_calls
+    function_call_responses = []
     if function_calls == None:
         print("No function calls were made")
-    #elif len(function_calls) == 1:
-        #print(f"Calling function: {function_calls.name}({function_calls.args})")
     else:
         for function_call in response.function_calls:
-            print(f"Calling function: {function_call.name}({function_call.args})")
+            #print(f"Calling function: {function_call.name}({function_call.args})")
+            # THIS IS THE LINE THAT DOES THE THING
+            call_function_output = call_function(function_call, verbose)
+        
+            if call_function_output is None:
+                raise Exception("Error: call_function returned None")
+            elif not hasattr(call_function_output, "parts"):
+                raise Exception("Error: call_function_output does not have 'parts'")
+            elif len(call_function_output.parts) == 0:
+                raise Exception("Error: call_function_output.parts has length = 0")
+            elif not hasattr(call_function_output.parts[0], "function_response"):
+                raise Exception("Error: call_function_output.parts[0] does not have 'function.response'")
+            elif not hasattr(call_function_output.parts[0].function_response, "response"):
+                raise Exception("Error: call_function_output.parts[0].function_response does not have 'response'")
+            elif "result" not in call_function_output.parts[0].function_response.response:
+                raise Exception("'result' call_function_output.parts[0].function_response.response")
+            else:
+                function_call_responses.append(call_function_output.parts[0])
+                #if verbose: print(f"-> {call_function_output.parts[0].function_response.response}")
+                if verbose: print(f"-> {call_function_output.parts[0].function_response.response['result']}")
+            
+
         
 
 

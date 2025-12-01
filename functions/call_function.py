@@ -1,26 +1,50 @@
 #import os
-#from google.genai import types
+from google.genai import types
+from functions.get_files_info import get_files_info
+from functions.get_file_content import get_file_content
+from functions.run_python_file import run_python_file
+from functions.write_file import write_file
 
-
+WORKING_DIRECTORY = "./calculator"
 
 def call_function(function_call_part, verbose=False):
     #What are we doing?
     if verbose: print(f"Calling function: {function_call_part.name}({function_call_part.args})")
     else: print(f" - Calling function: {function_call_part.name}")
 
+    args = function_call_part.args
+    args["working_directory"] = WORKING_DIRECTORY
+    function_result = "ERROR NO FUNCTION WAS CALLED, FAILURE IN call_function"
 
-
-
-
-
-
-
-
-
-
-
-
-
+    match function_call_part.name:
+        case "get_files_info":
+            function_result = get_files_info(**args)
+        case "get_file_content":
+            function_result = get_file_content(**args)
+        case "run_python_file":
+            function_result = run_python_file(**args)
+        case "write_file":
+            function_result = write_file(**args)
+        case _:
+            return types.Content(
+                role="tool",
+                parts=[
+                    types.Part.from_function_response(
+                        name=function_call_part.name,
+                        response={"error": f"Unknown function: {function_call_part.name}"},
+                    )
+                ],
+            )
+    
+    return types.Content(
+        role="tool",
+        parts=[
+            types.Part.from_function_response(
+                name=function_call_part.name,
+                response={"result": function_result},
+            )
+        ],
+    )
 
 
 
@@ -66,7 +90,7 @@ schema_get_file_content  = types.FunctionDeclaration(
 
 schema_run_python_file = types.FunctionDeclaration(
     name="run_python_file",
-    description="Run the specified python file, with the specified arguments, constrained to the working directory.",
+    description="Run the specified python file, with the specified arguments, constrained to the working directory. If no arguments are given, do not pass any arguments.",
     parameters=types.Schema(
         type=types.Type.OBJECT,
         properties={
